@@ -8,7 +8,9 @@ See "isolate sandbox installation" section below for installation instructions.
 
 Otherwise, you can install the library in editable mode using pip:
 ```bash
-python -m pip install -e .
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
 Editable mode allows to edit the library code and see changes without reinstalling.
