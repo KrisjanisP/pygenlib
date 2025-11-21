@@ -1,5 +1,4 @@
-Personal test preperation library for Latvian Informatics Olympiad (LIO).
-Context is competitive programming tasks.
+Personal programming task test preperation library for Latvian Informatics Olympiad (LIO).
 
 ## Installation
 
@@ -16,11 +15,19 @@ Editable mode allows to edit the library code and see changes without reinstalli
 
 ## Usage instructions
 
-See example in `./example/usage/script.py`.
+See example in `./examples/usage/script.py`.
 
 ## Latvian informatics olympiad
 
-We have our own 
+LIO has its own task file structure and a more granular point distribution system.
+Besides having subtasks, LIO has testgroups. User score is accumulated over testgroups.
+
+See `./examples/task.yaml` for example of how points are assigned to testgroups and testgroups are assigned to subtasks.
+
+Tests are named like `task.i01a`, `task.i01b`, `task.i01c`, etc. Text `task` is replaced by the identifier of the task.
+Number `01` is the testgroup number. Letter `a` is the testcase number inside the testgroup.
+
+If the testfile is an answer not an input, the name is `task.o01a`. The `i` is replaced by `o`.
 
 ## Isolate sandbox installation
 
