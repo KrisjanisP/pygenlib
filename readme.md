@@ -35,7 +35,6 @@ Installation is approximately as follows.
 Dont blindly copy and paste, these are meant as guidelines.
 
 ```bash
-Approximate installation instructions
 git clone https://github.com/ioi/isolate.git
 cd isolate
 make
