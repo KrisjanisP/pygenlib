@@ -1,0 +1,79 @@
+name: 'Radiotorni'
+title: 'Radiotorņi'
+statements:
+  - ['./teksts/radiotorni.typ', 'lv']
+
+time_limit: 1.0
+memory_limit: 256
+
+validator: './riki/validator.cpp'
+tests_archive: './testi/tests.zip'
+
+checker: './riki/checker.cpp'
+
+subtask_points: [0, 13, 18, 26, 21, 22]
+
+tests_groups:
+    - groups: 0
+      points: 0
+      public: true
+      subtask: 0
+      comment: Piemēri
+    
+    - groups: [1, 2]
+      points: 2
+      public: False
+      subtask: 1
+      attachment:
+        input: False
+        output: False
+
+    - groups: [3, 4]
+      points: 3
+      public: False
+      subtask: 1
+
+    - groups: [5, 5]
+      points: 3
+      public: True
+      subtask: 1
+
+    - groups: [6, 10]
+      points: 3
+      public: False
+      subtask: 2
+
+    - groups: [11, 11]
+      points: 3
+      public: True
+      subtask: 2
+
+    - groups: [12, 12]
+      points: 10
+      public: False
+      subtask: 3
+
+    - groups: [13, 13]
+      points: 10
+      public: True
+      subtask: 3
+
+    - groups: [14, 15]
+      points: 8
+      public: False
+      subtask: 4
+
+    - groups: [16, 16]
+      points: 5
+      public: True
+      subtask: 4
+
+    - groups: [17, 19]
+      points: 6
+      public: False
+      subtask: 5
+
+    - groups: [20, 20]
+      points: 10
+      public: True
+      subtask: 5

@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pygenlib"
+version = "0.1.0"
+description = "Personal test preparation library for Latvian Informatics Olympiad tasks."
+readme = "readme.md"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pygenlib*"]
+
