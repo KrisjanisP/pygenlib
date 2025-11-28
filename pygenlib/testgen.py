@@ -5,20 +5,20 @@ import os
 logger = logging.getLogger(__name__)
 
 class Generator:
-    def __init__(self, task_name, model_sol, gen_cpp_path="gen.cpp", testlib_path="testlib.h", tests_dir="./tests"):
+    def __init__(self, task_name, model_sol, gen="gen.cpp", testlib_h="testlib.h", tests_dir="./tests"):
         """Initialize the generator with task name and model solution.
         
         Args:
             task_name: Name of the task
             model_sol: Path to the model solution
-            gen_cpp_path: Path to the generator cpp file
-            testlib_path: Path to the testlib.h file
+            gen: Path to the generator cpp file
+            testlib_h: Path to the testlib.h file
             tests_dir: Directory where test files will be saved
         """
         self.task_name = task_name
         self.model_sol = model_sol
-        self.gen_cpp_path = gen_cpp_path
-        self.testlib_path = testlib_path
+        self.gen_cpp_path = gen
+        self.testlib_path = testlib_h
         self.tests_dir = tests_dir
         
         # Ensure tests directory exists
@@ -65,3 +65,32 @@ class Generator:
             output_path = os.path.join(self.tests_dir, f"{self.task_name}.o{tg_ext}")
             with open(output_path, "w") as f:
                 f.write(prog_res.stdout)
+
+default_gen = None
+
+def set_generator(generator: Generator):
+    global default_gen
+    default_gen = generator
+
+def set_gen_params(task_name, model_sol, gen="gen.cpp", testlib_h="testlib.h", tests_dir="./tests"):
+    global default_gen
+    default_gen = Generator(task_name, model_sol, gen, testlib_h, tests_dir)
+
+def gen(tg_ext, *args):
+    """Generate input and expected output (answer) for a test case.
+
+    1. Adds testlib.h and gen.cpp to the isolate sandbox.
+    2. Runs gen.cpp with the given args to generate the input.
+    3. Saves the input to {tests_dir}/{task_name}.i{tg_ext}
+    4. Adds model solution to a new isolate sandbox.
+    5. Runs the model solution on the input to generate the expected output.
+    6. Saves the expected output to {tests_dir}/{task_name}.o{tg_ext}
+
+    Args:
+        tg_ext: Suffix for the test case (e.g. "00a", "00b")
+        args: list of arguments to pass to the generator
+    """
+
+    if default_gen is None:
+        raise Exception("Default generator is not set")
+    default_gen.gen(tg_ext, *args)

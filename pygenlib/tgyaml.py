@@ -16,7 +16,7 @@ class TgYaml:
         mx_tg = max(tg_list, key=lambda tg: tg["tg_id"])
         return f"[{mn_tg['tg_id']}, {mx_tg['tg_id']}]"
 
-    def export(self, yaml_path="task.yaml"):
+    def export_yaml(self, yaml_path="task.yaml"):
         f = open(yaml_path, "w")
         f.write("""
 tests_groups:
@@ -45,3 +45,11 @@ tests_groups:
                 tg_buffer = [tg]
         if len(tg_buffer) > 0:
             flush_tg(tg_buffer)
+
+default_tg_yaml = TgYaml()
+
+def record_tg(st, tg, pts, public=False, c=None):
+    default_tg_yaml.record_tg(st, tg, pts, public, c)
+
+def export_yaml(yaml_path="task.yaml"):
+    default_tg_yaml.export_yaml(yaml_path)

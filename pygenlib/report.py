@@ -21,7 +21,7 @@ class TestCaseResult:
     checker_msg: str = ""  # Output message from the checker
 
 class Reporter:
-    def __init__(self, task_name, tests_dir="./tests", checker_path=None, testlib_path="testlib.h", cache_dir="./cache"):
+    def __init__(self, task_name, tests_dir, checker_path, testlib_path, cache_dir):
         """Initialize the reporter with task name and optional checker.
         
         Args:
@@ -296,3 +296,16 @@ class Reporter:
             test_name=test_name,
             checker_msg=checker_msg
         )
+
+default_reporter = None
+def set_reporter(reporter: Reporter):
+    global default_reporter
+    default_reporter = reporter
+
+def set_reporter_params(task_name, tests_dir, checker_path="checker.cpp", testlib_path="testlib.h", cache_dir="./cache"):
+    global default_reporter
+    default_reporter = Reporter(task_name, tests_dir, checker_path, testlib_path, cache_dir)
+
+def report(sol_path):
+    global default_reporter
+    default_reporter.report(sol_path)
