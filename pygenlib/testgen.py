@@ -1,82 +1,31 @@
+from dataclasses import dataclass
+import json
+from typing import Optional
+
+from pygenlib import config
 from pygenlib.isolate import run_cpp_code
 import logging
 import os
 
 logger = logging.getLogger(__name__)
 
-class Generator:
-    def __init__(self, task_name, model_sol, gen="gen.cpp", testlib_h="testlib.h", tests_dir="./tests"):
-        """Initialize the generator with task name and model solution.
-        
-        Args:
-            task_name: Name of the task
-            model_sol: Path to the model solution
-            gen: Path to the generator cpp file
-            testlib_h: Path to the testlib.h file
-            tests_dir: Directory where test files will be saved
-        """
-        self.task_name = task_name
-        self.model_sol = model_sol
-        self.gen_cpp_path = gen
-        self.testlib_path = testlib_h
-        self.tests_dir = tests_dir
-        
-        # Ensure tests directory exists
-        os.makedirs(self.tests_dir, exist_ok=True)
-    
-    def gen(self, tg_ext, *args):
-        """Generate input and expected output (answer) for a test case.
 
-        1. Adds testlib.h and gen.cpp to the isolate sandbox.
-        2. Runs gen.cpp with the given args to generate the input.
-        3. Saves the input to {tests_dir}/{task_name}.i{tg_ext}
-        4. Adds model solution to a new isolate sandbox.
-        5. Runs the model solution on the input to generate the expected output.
-        6. Saves the expected output to {tests_dir}/{task_name}.o{tg_ext}
+@dataclass
+class GeneratorConfig:
+    task_name: str
+    model_solution_path: str
+    generator_path: str
+    testlib_header_path: str
+    tests_dir: str
 
-        Args:
-            tg_ext: Suffix for the test case (e.g. "00a", "00b")
-            args: list of arguments to pass to the generator
-        """
-        logger.info(f"Generating test {tg_ext} with args: {args}")
-        args = [str(arg) for arg in args]
-        # add testgroup as the last argument
-        args.append(tg_ext)
-        with open(self.testlib_path, "r") as f:
-            testlib_h = f.read()
+_default_generator_config: Optional[GeneratorConfig] = None
 
-        with open(self.gen_cpp_path, "r") as f:
-            gen_res = run_cpp_code(
-                f.read(), "", args=args, additional_files={"testlib.h": testlib_h}
-            )
-            assert gen_res.exit_code == 0
-            input_path = os.path.join(self.tests_dir, f"{self.task_name}.i{tg_ext}")
-            with open(input_path, "w") as f:
-                f.write(gen_res.stdout)
+def override_generator_config(cfg: GeneratorConfig):
+    """Set the default generator configuration used by the module-level gen function."""
+    global _default_generator_config
+    _default_generator_config = cfg
 
-        with open(self.model_sol, "r") as f:
-            model_sol_code = f.read()
-            prog_res = run_cpp_code(model_sol_code, stdin=gen_res.stdout)
-            if prog_res.exit_code != 0:
-                logger.error(f"Model solution {self.model_sol} returned exit code {prog_res.exit_code} for test {tg_ext} with args {args}")
-                import json
-                logger.error(f"Model solution data: {json.dumps(prog_res.__dict__, indent=4)}")
-                raise Exception(f"Model solution {self.model_sol} returned exit code {prog_res.exit_code} for test {tg_ext} with args {args}")
-            output_path = os.path.join(self.tests_dir, f"{self.task_name}.o{tg_ext}")
-            with open(output_path, "w") as f:
-                f.write(prog_res.stdout)
-
-default_gen = None
-
-def set_generator(generator: Generator):
-    global default_gen
-    default_gen = generator
-
-def set_gen_params(task_name, model_sol, gen="gen.cpp", testlib_h="testlib.h", tests_dir="./tests"):
-    global default_gen
-    default_gen = Generator(task_name, model_sol, gen, testlib_h, tests_dir)
-
-def gen(tg_ext, *args):
+def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None):
     """Generate input and expected output (answer) for a test case.
 
     1. Adds testlib.h and gen.cpp to the isolate sandbox.
@@ -89,8 +38,55 @@ def gen(tg_ext, *args):
     Args:
         tg_ext: Suffix for the test case (e.g. "00a", "00b")
         args: list of arguments to pass to the generator
+        generator_config: Optional explicit configuration. If omitted, uses the default
+            set via set_generator_config or falls back to the global configuration.
     """
+    cfg = _resolve_generator_config(cfg)
+    os.makedirs(cfg.tests_dir, exist_ok=True)
 
-    if default_gen is None:
-        raise Exception("Default generator is not set")
-    default_gen.gen(tg_ext, *args)
+    logger.info(f"Generating test {tg_ext} with args: {args}")
+    args = [str(arg) for arg in args]
+    args.append(tg_ext)
+
+    with open(cfg.testlib_header_path, "r") as f:
+        testlib_h = f.read()
+
+    with open(cfg.generator_path, "r") as f:
+        gen_res = run_cpp_code(
+            f.read(), "", args=args, additional_files={"testlib.h": testlib_h}
+        )
+        assert gen_res.exit_code == 0
+        input_path = os.path.join(cfg.tests_dir, f"{cfg.task_name}.i{tg_ext}")
+        with open(input_path, "w") as f_out:
+            f_out.write(gen_res.stdout)
+
+    with open(cfg.model_solution_path, "r") as f:
+        model_sol_code = f.read()
+        prog_res = run_cpp_code(model_sol_code, stdin=gen_res.stdout)
+        if prog_res.exit_code != 0:
+            logger.error(
+                f"Model solution {cfg.model_solution_path} returned exit code {prog_res.exit_code} "
+                f"for test {tg_ext} with args {args}"
+            )
+            logger.error(f"Model solution data: {json.dumps(prog_res.__dict__, indent=4)}")
+            raise Exception(
+                f"Model solution {cfg.model_solution_path} returned exit code {prog_res.exit_code} "
+                f"for test {tg_ext} with args {args}"
+            )
+        output_path = os.path.join(cfg.tests_dir, f"{cfg.task_name}.o{tg_ext}")
+        with open(output_path, "w") as f_out:
+            f_out.write(prog_res.stdout)
+
+
+def _resolve_generator_config(generator_config: Optional[GeneratorConfig]) -> GeneratorConfig:
+    if generator_config is not None:
+        return generator_config
+    if _default_generator_config is not None:
+        return _default_generator_config
+    return GeneratorConfig(
+        task_name=config.get_task_id(),
+        model_solution_path=config.get_model_solution_path(),
+        generator_path=config.get_testlib_gen_path(),
+        testlib_header_path=config.get_testlib_header_path(),
+        tests_dir=config.get_tests_dir_path(),
+    )

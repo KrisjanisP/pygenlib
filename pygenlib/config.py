@@ -131,3 +131,17 @@ def get_testlib_header_path() -> str:
     global _conf
     _conf.testlib_header_path = _require_existing_file(_conf.testlib_header_path, "testlib header")
     return _conf.testlib_header_path
+
+
+def get_testlib_gen_path() -> str:
+    global _conf
+    _conf.testlib_gen_path = _require_existing_file(_conf.testlib_gen_path, "testlib generator")
+    return _conf.testlib_gen_path
+
+
+def get_model_solution_path() -> str:
+    global _conf
+    if not _conf.model_solution_path:
+        raise ValueError("model solution path is not configured")
+    _conf.model_solution_path = _require_existing_file(_conf.model_solution_path, "model solution")
+    return _conf.model_solution_path

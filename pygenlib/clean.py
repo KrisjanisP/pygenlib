@@ -3,6 +3,8 @@ import os
 import shutil
 import logging
 
+from pygenlib import config
+
 logger = logging.getLogger(__name__)
 
 def clean():
@@ -25,8 +27,9 @@ def clean():
         os.remove(out_file)
 
     # Remove cache directory
-    if os.path.exists("cache"):
-        shutil.rmtree("cache")
+    cache_dir = config.get_cache_dir_path()
+    if os.path.exists(cache_dir):
+        shutil.rmtree(cache_dir)
 
     # Remove all .o files
     for o_file in glob.glob("./**/*.o", recursive=True):
@@ -41,8 +44,14 @@ def clean():
         shutil.rmtree(pycache_dir)
 
     # Remove tests directory
-    if os.path.exists("tests"):
-        shutil.rmtree("tests")
+    tests_dir = config.get_tests_dir_path()
+    if os.path.exists(tests_dir):
+        shutil.rmtree(tests_dir)
+
+    # Remove reports directory
+    reports_dir = config.get_reports_dir_path()
+    if os.path.exists(reports_dir):
+        shutil.rmtree(reports_dir)
 
     # Remove task.yaml
     if os.path.exists("task.yaml"):
