@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from pygenlib.isolate import run_cpp_code, run_py_code
+from pygenlib import config
 import csv
 import logging
 import os
@@ -302,10 +303,14 @@ def set_reporter(reporter: Reporter):
     global default_reporter
     default_reporter = reporter
 
-def set_reporter_params(task_name, tests_dir, checker_path="checker.cpp", testlib_path="testlib.h", cache_dir="./cache"):
-    global default_reporter
-    default_reporter = Reporter(task_name, tests_dir, checker_path, testlib_path, cache_dir)
-
 def report(sol_path):
     global default_reporter
+    if default_reporter is None:
+        default_reporter = Reporter(
+            task_name=config.get_task_id(),
+            tests_dir=config.get_tests_dir_path(),
+            checker_path=config.get_testlib_checker_path(),
+            testlib_path=config.get_testlib_header_path(),
+            cache_dir=config.get_cache_dir_path(),
+        )
     default_reporter.report(sol_path)
