@@ -44,7 +44,7 @@ def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None):
     cfg = _resolve_generator_config(cfg)
     os.makedirs(cfg.tests_dir, exist_ok=True)
 
-    logger.info(f"Generating test {tg_ext} with args: {args}")
+    logger.debug(f"Generating test {tg_ext} with args: {args}")
     args = [str(arg) for arg in args]
     args.append(tg_ext)
 

@@ -49,9 +49,9 @@ def report(sol_path, output_file=None, cfg: Optional[ReporterConfig] = None):
     checker_executable = _compile_checker(cfg) if cfg.checker_path else None
     include_checker_msg = checker_executable is not None
 
-    logger.info(f"Generating report for solution: {sol_path}")
+    logger.debug(f"Generating report for solution: {sol_path}")
     if checker_executable:
-        logger.info(f"Using checker executable: {checker_executable}")
+        logger.debug(f"Using checker executable: {checker_executable}")
 
     with open(sol_path, "r") as f:
         sol_code = f.read()
@@ -64,11 +64,11 @@ def report(sol_path, output_file=None, cfg: Optional[ReporterConfig] = None):
     test_files = sorted(
         f for f in os.listdir(cfg.tests_dir) if f.startswith(f"{cfg.task_name}.i")
     )
-    logger.info(f"Found {len(test_files)} test files to process")
+    logger.debug(f"Found {len(test_files)} test files to process")
 
     for test_file in test_files:
         full_test_path = os.path.join(cfg.tests_dir, test_file)
-        logger.info(f"Running test: {test_file}")
+        logger.debug(f"Running test: {test_file}")
         result = _run_test(
             full_test_path,
             sol_code,
@@ -77,7 +77,7 @@ def report(sol_path, output_file=None, cfg: Optional[ReporterConfig] = None):
         )
         _append_result(output_path, result, include_checker_msg)
 
-    logger.info(f"Results written to {output_path}")
+    logger.debug(f"Results written to {output_path}")
 
 
 def _resolve_reporter_config(reporter_config: Optional[ReporterConfig]) -> ReporterConfig:
@@ -109,7 +109,7 @@ def _compile_checker(cfg: ReporterConfig) -> Optional[str]:
     checker_exe_path = os.path.join(cfg.cache_dir, f"checker_{checker_hash}")
 
     if os.path.exists(checker_exe_path):
-        logger.info(f"Using cached checker: {checker_exe_path}")
+        logger.debug(f"Using cached checker: {checker_exe_path}")
         return checker_exe_path
 
     with open(cfg.testlib_path, "r") as f:
@@ -125,10 +125,10 @@ def _compile_checker(cfg: ReporterConfig) -> Optional[str]:
         f.write(checker_content)
 
     compile_cmd = ["g++", "-std=c++17", "-O2", checker_cache_path, "-o", checker_exe_path]
-    logger.info(f"Compiling checker with command: {' '.join(compile_cmd)}")
+    logger.debug(f"Compiling checker with command: {' '.join(compile_cmd)}")
     try:
         subprocess.run(compile_cmd, check=True)
-        logger.info(f"Checker compiled successfully: {checker_exe_path}")
+        logger.debug(f"Checker compiled successfully: {checker_exe_path}")
         return checker_exe_path
     except subprocess.CalledProcessError as exc:
         logger.error(f"Failed to compile checker: {exc}")
@@ -181,7 +181,7 @@ def _run_test(test_file: str, sol_code: str, lang: str, checker_executable: Opti
             logger.debug("Using string comparison to verify output")
             verdict = _string_compare(run_result.stdout, answer)
 
-    logger.info(
+    logger.debug(
         f"Test {test_name} result: {verdict}, time: {run_result.exec_time:.2f}s, "
         f"memory: {run_result.cg_mem_kib/1024:.2f}MiB"
     )
@@ -282,7 +282,7 @@ def _resolve_output_path(sol_path: str, provided_output: Optional[str], cfg: Rep
     base_name = os.path.splitext(os.path.basename(sol_path))[0]
     default_name = f"{cfg.task_name}_{base_name}.tsv"
     default_path = os.path.join(cfg.reports_dir, default_name)
-    logger.info(f"Output file not specified, using: {default_path}")
+    logger.debug(f"Output file not specified, using: {default_path}")
     return default_path
 
 

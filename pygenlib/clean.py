@@ -1,11 +1,9 @@
 import glob
 import os
 import shutil
-import logging
 
 from pygenlib import config
 
-logger = logging.getLogger(__name__)
 
 def clean():
     """Cleans up generated files and directories.
@@ -19,8 +17,6 @@ def clean():
     - tests directory
     - task.yaml
     """
-
-    logger.info("Cleaning up generated files and directories")
 
     # Remove all .out files
     for out_file in glob.glob("./**/*.out", recursive=True):

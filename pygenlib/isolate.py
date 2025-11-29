@@ -210,7 +210,7 @@ def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: li
                     f.write(content)
 
         # Compile
-        logger.info("Compiling C++ code")
+        logger.debug("Compiling C++ code")
         compile_cmd = ["g++", "-O2", "-std=c++17", src_path, "-o", 
                         os.path.join(tmpdir, exe_name)]
         
