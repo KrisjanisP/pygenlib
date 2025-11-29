@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import os
 import re
 
@@ -6,7 +6,7 @@ import re
 class CommonConfig:
     task_id: str = ""
 
-    solution_paths: list[str] = []
+    solution_paths: list[str] = field(default_factory=list)
     model_solution_path: str = ""
 
     testlib_gen_path: str = "gen.cpp"
@@ -145,3 +145,7 @@ def get_model_solution_path() -> str:
         raise ValueError("model solution path is not configured")
     _conf.model_solution_path = _require_existing_file(_conf.model_solution_path, "model solution")
     return _conf.model_solution_path
+
+def get_solution_paths() -> list[str]:
+    global _conf
+    return _conf.solution_paths
