@@ -1,0 +1,133 @@
+from dataclasses import dataclass
+import os
+import re
+
+@dataclass
+class CommonConfig:
+    task_id: str = ""
+
+    solution_paths: list[str] = []
+    model_solution_path: str = ""
+
+    testlib_gen_path: str = "gen.cpp"
+    testlib_checker_path: str = "checker.cpp"
+    testlib_header_path: str = "testlib.h"
+
+    tests_dir: str = "./tests"
+    cache_dir: str = "./cache"
+    reports_dir: str = "./reports"
+
+_conf = CommonConfig()
+
+def set_task_id(new_task_id):
+    global _conf
+    # check if the new_task id is well-formed
+    # task id is a string of alphanumeric characters, hyphens, and underscores
+    if not re.match(r'^[a-zA-Z0-9_-]+$', new_task_id):
+        raise ValueError(f"task ID {new_task_id} is not well-formed")
+    _conf.task_id = new_task_id
+
+
+def get_task_id() -> str:
+    if not _conf.task_id:
+        raise ValueError("task ID is not configured")
+    return _conf.task_id
+
+def _normalize_path(path: str) -> str:
+    if not path:
+        raise ValueError("path cannot be empty")
+    return os.path.abspath(os.path.expanduser(path))
+
+
+def _require_existing_file(path: str, description: str) -> str:
+    abs_path = _normalize_path(path)
+    if not os.path.isfile(abs_path):
+        raise FileNotFoundError(f"{description} path '{path}' does not exist or is not a file")
+    return abs_path
+
+
+def _allow_missing_dir(path: str, description: str) -> str:
+    abs_path = _normalize_path(path)
+    parent_dir = os.path.dirname(abs_path) or os.path.abspath(os.curdir)
+    if not os.path.isdir(parent_dir):
+        raise FileNotFoundError(f"parent directory '{parent_dir}' for {description} path '{path}' does not exist")
+    if os.path.exists(abs_path) and not os.path.isdir(abs_path):
+        raise NotADirectoryError(f"{description} path '{path}' exists but is not a directory")
+    return abs_path
+
+
+def add_solution(new_solution_path, is_model=False):
+    global _conf
+    abs_path = _require_existing_file(new_solution_path, "solution")
+    if is_model:
+        _conf.model_solution_path = abs_path
+    else:
+        if abs_path not in _conf.solution_paths:
+            _conf.solution_paths.append(abs_path)
+    return abs_path
+
+
+def override_generator_path(path):
+    global _conf
+    _conf.testlib_gen_path = _require_existing_file(path, "testlib generator")
+    return _conf.testlib_gen_path
+
+
+def override_checker_path(path):
+    global _conf
+    _conf.testlib_checker_path = _require_existing_file(path, "testlib checker")
+    return _conf.testlib_checker_path
+
+
+def override_testlib_h_path(path):
+    global _conf
+    _conf.testlib_header_path = _require_existing_file(path, "testlib header")
+    return _conf.testlib_header_path
+
+
+def override_tests_dir_path(path):
+    global _conf
+    _conf.tests_dir = _allow_missing_dir(path, "tests directory")
+    return _conf.tests_dir
+
+
+def override_cache_dir_path(path):
+    global _conf
+    _conf.cache_dir = _allow_missing_dir(path, "cache directory")
+    return _conf.cache_dir
+
+
+def override_reports_dir_path(path):
+    global _conf
+    _conf.reports_dir = _allow_missing_dir(path, "reports directory")
+    return _conf.reports_dir
+
+
+def get_cache_dir_path() -> str:
+    global _conf
+    _conf.cache_dir = _allow_missing_dir(_conf.cache_dir, "cache directory")
+    return _conf.cache_dir
+
+
+def get_tests_dir_path() -> str:
+    global _conf
+    _conf.tests_dir = _allow_missing_dir(_conf.tests_dir, "tests directory")
+    return _conf.tests_dir
+
+
+def get_reports_dir_path() -> str:
+    global _conf
+    _conf.reports_dir = _allow_missing_dir(_conf.reports_dir, "reports directory")
+    return _conf.reports_dir
+
+
+def get_testlib_checker_path() -> str:
+    global _conf
+    _conf.testlib_checker_path = _require_existing_file(_conf.testlib_checker_path, "testlib checker")
+    return _conf.testlib_checker_path
+
+
+def get_testlib_header_path() -> str:
+    global _conf
+    _conf.testlib_header_path = _require_existing_file(_conf.testlib_header_path, "testlib header")
+    return _conf.testlib_header_path
