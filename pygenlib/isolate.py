@@ -6,6 +6,8 @@ import tempfile
 import shutil
 import logging
 
+from pygenlib import config
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -177,7 +179,7 @@ def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: li
     checksum = m.hexdigest()
     
     # Check cache directory
-    cache_dir = os.path.expanduser("./cache")
+    cache_dir = config.get_cache_dir_path()
     os.makedirs(cache_dir, exist_ok=True)
     cached_exe = os.path.join(cache_dir, checksum)
     
