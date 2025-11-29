@@ -55,7 +55,16 @@ def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None):
         gen_res = run_cpp_code(
             f.read(), "", args=args, additional_files={"testlib.h": testlib_h}
         )
-        assert gen_res.exit_code == 0
+        if gen_res.exit_code != 0:
+            logger.error(
+                f"Generator {cfg.generator_path} returned exit code {gen_res.exit_code} "
+                f"for test {tg_ext} with args {args}"
+            )
+            logger.error(f"Generator data: {json.dumps(gen_res.__dict__, indent=4)}")
+            raise Exception(
+                f"Generator {cfg.generator_path} returned exit code {gen_res.exit_code} "
+                f"for test {tg_ext} with args {args}"
+            )
         input_path = os.path.join(cfg.tests_dir, f"{cfg.task_name}.i{tg_ext}")
         with open(input_path, "w") as f_out:
             f_out.write(gen_res.stdout)
