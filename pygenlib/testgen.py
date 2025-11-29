@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 import json
-from typing import Optional
+from typing import Mapping, Optional
 
 from pygenlib import config
 from pygenlib.isolate import run_cpp_code
@@ -25,7 +25,7 @@ def override_generator_config(cfg: GeneratorConfig):
     global _default_generator_config
     _default_generator_config = cfg
 
-def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None):
+def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None, extra_files: Optional[Mapping[str, str]] = None):
     """Generate input and expected output (answer) for a test case.
 
     1. Adds testlib.h and gen.cpp to the isolate sandbox.
@@ -38,8 +38,10 @@ def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None):
     Args:
         tg_ext: Suffix for the test case (e.g. "00a", "00b")
         args: list of arguments to pass to the generator
-        generator_config: Optional explicit configuration. If omitted, uses the default
-            set via set_generator_config or falls back to the global configuration.
+        cfg: Optional explicit configuration. If omitted, uses the stored default
+            or falls back to the global configuration.
+        extra_files: Optional mapping of filename -> file path or literal contents.
+            Files are added alongside testlib.h inside the generator sandbox.
     """
     cfg = _resolve_generator_config(cfg)
     os.makedirs(cfg.tests_dir, exist_ok=True)
@@ -51,9 +53,13 @@ def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None):
     with open(cfg.testlib_header_path, "r") as f:
         testlib_h = f.read()
 
+    compile_files = {"testlib.h": testlib_h}
+    run_files = _prepare_extra_files(extra_files)
+    compile_files.update(run_files)
+
     with open(cfg.generator_path, "r") as f:
         gen_res = run_cpp_code(
-            f.read(), "", args=args, additional_files={"testlib.h": testlib_h}
+            f.read(), "", args=args, extra_compile_files=compile_files, extra_run_files=run_files
         )
         if gen_res.exit_code != 0:
             logger.error(
@@ -99,3 +105,17 @@ def _resolve_generator_config(generator_config: Optional[GeneratorConfig]) -> Ge
         testlib_header_path=config.get_testlib_header_path(),
         tests_dir=config.get_tests_dir_path(),
     )
+
+
+def _prepare_extra_files(extra_files: Optional[Mapping[str, str]]) -> dict[str, str]:
+    """Return mapping of filename->contents for extra files."""
+    prepared: dict[str, str] = {}
+    if not extra_files:
+        return prepared
+    for filename, src in extra_files.items():
+        if os.path.isfile(src):
+            with open(src, "r") as f:
+                prepared[filename] = f.read()
+        else:
+            prepared[filename] = src
+    return prepared

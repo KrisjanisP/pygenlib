@@ -156,15 +156,16 @@ def _init_sandbox() -> str:
     return box_path
 
 
-def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: list = None, additional_files: dict = None) -> IsolateResult:
-    """Run C++ code in IOI isolate sandbox
+def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: list = None, extra_compile_files: dict = None, extra_run_files: dict = None) -> IsolateResult:
+    """Run C++ code in IOI isolate sandbox.
     
     Args:
         source_code: C++ source code to compile and run
         stdin: Input to feed to program
         time_limit: Time limit in seconds
         args: Command line arguments to pass to program
-        additional_files: Dictionary mapping filenames to file contents to include in compilation directory
+        extra_compile_files: Dictionary mapping filenames to file contents to include in compilation directory
+        extra_run_files: Dictionary mapping filenames to file contents to include in run directory
     """
     logger.debug("Running C++ code")
     box_path = _init_sandbox()
@@ -172,10 +173,10 @@ def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: li
     # Calculate checksum of source and additional files
     m = hashlib.sha256()
     m.update(source_code.encode())
-    if additional_files:
-        for filename in sorted(additional_files.keys()):
+    if extra_compile_files:
+        for filename in sorted(extra_compile_files.keys()):
             m.update(filename.encode())
-            m.update(additional_files[filename].encode())
+            m.update(extra_compile_files[filename].encode())
     checksum = m.hexdigest()
     
     # Check cache directory
@@ -183,12 +184,27 @@ def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: li
     os.makedirs(cache_dir, exist_ok=True)
     cached_exe = os.path.join(cache_dir, checksum)
     
+    def _write_run_files():
+        if not extra_run_files:
+            return
+        for filename, content in extra_run_files.items():
+            file_path = os.path.join(box_path, "box", filename)
+            dir_path = os.path.dirname(file_path)
+            if dir_path:
+                os.makedirs(dir_path, exist_ok=True)
+            logger.debug(f"Moving extra run file to sandbox: {file_path}")
+            with open(file_path, "w") as f:
+                f.write(content)
+            if not os.path.exists(file_path):
+                raise FileNotFoundError(f"Extra run file not found: {file_path}")
+
     if os.path.exists(cached_exe):
         logger.debug("Found cached executable")
         # Copy from cache to sandbox
         box_exe_path = os.path.join(box_path, "box", "solution")
         shutil.copy2(cached_exe, box_exe_path)
         assert os.path.exists(box_exe_path)
+        _write_run_files()
         return run_cmd_in_isolate(f"./solution {' '.join(args) if args else ''}", None, stdin, box_path=box_path, time_limit=time_limit)
     
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -202,8 +218,8 @@ def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: li
             f.write(source_code)
 
         # Write any additional files
-        if additional_files:
-            for filename, content in additional_files.items():
+        if extra_compile_files:
+            for filename, content in extra_compile_files.items():
                 file_path = os.path.join(tmpdir, filename)
                 logger.debug(f"Writing additional file: {file_path}")
                 with open(file_path, "w") as f:
@@ -230,9 +246,12 @@ def run_cpp_code(source_code: str, stdin: str, time_limit: float = 5.0, args: li
         box_exe_path = os.path.join(box_path, "box", exe_name)
         logger.debug(f"Moving executable to sandbox: {box_exe_path}")
         shutil.copy2(os.path.join(tmpdir, exe_name), box_exe_path)
-        
+
         # make sure that the executable is in the box
         assert os.path.exists(box_exe_path)
+
+        # Copy extra files to sandbox
+        _write_run_files()
 
         return run_cmd_in_isolate(f"./{exe_name} {' '.join(args) if args else ''}", None, stdin, box_path=box_path, time_limit=time_limit)
 
