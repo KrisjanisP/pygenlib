@@ -6,6 +6,7 @@ from pygenlib import config
 import csv
 import logging
 import os
+import shutil
 import tempfile
 import subprocess
 import hashlib
@@ -105,34 +106,46 @@ def _compile_checker(cfg: ReporterConfig) -> Optional[str]:
 
     os.makedirs(cfg.cache_dir, exist_ok=True)
 
-    checker_hash = hashlib.md5(cfg.checker_path.encode()).hexdigest()
+    hash_ctx = hashlib.md5()
+    hash_ctx.update(cfg.checker_path.encode())
+    hash_ctx.update(str(os.path.getmtime(cfg.checker_path)).encode())
+    hash_ctx.update(cfg.testlib_path.encode())
+    hash_ctx.update(str(os.path.getmtime(cfg.testlib_path)).encode())
+    checker_hash = hash_ctx.hexdigest()
     checker_exe_path = os.path.join(cfg.cache_dir, f"checker_{checker_hash}")
 
     if os.path.exists(checker_exe_path):
         logger.debug(f"Using cached checker: {checker_exe_path}")
         return checker_exe_path
 
-    with open(cfg.testlib_path, "r") as f:
-        testlib_content = f.read()
-    testlib_cache_path = os.path.join(cfg.cache_dir, "testlib.h")
-    with open(testlib_cache_path, "w") as f:
-        f.write(testlib_content)
+    compile_dir = tempfile.mkdtemp(dir=cfg.cache_dir, prefix="checker-src-")
+    checker_src_path = os.path.join(compile_dir, "checker.cpp")
+    testlib_copy_path = os.path.join(compile_dir, "testlib.h")
 
-    with open(cfg.checker_path, "r") as f:
-        checker_content = f.read()
-    checker_cache_path = os.path.join(cfg.cache_dir, "checker.cpp")
-    with open(checker_cache_path, "w") as f:
-        f.write(checker_content)
+    with open(cfg.checker_path, "r") as f_in, open(checker_src_path, "w") as f_out:
+        f_out.write(f_in.read())
 
-    compile_cmd = ["g++", "-std=c++17", "-O2", checker_cache_path, "-o", checker_exe_path]
+    with open(cfg.testlib_path, "r") as f_in, open(testlib_copy_path, "w") as f_out:
+        f_out.write(f_in.read())
+
+    compile_cmd = [
+        "g++",
+        "-std=c++17",
+        "-O2",
+        checker_src_path,
+        "-o",
+        checker_exe_path,
+    ]
     logger.debug(f"Compiling checker with command: {' '.join(compile_cmd)}")
     try:
-        subprocess.run(compile_cmd, check=True)
+        subprocess.run(compile_cmd, check=True, cwd=compile_dir)
         logger.debug(f"Checker compiled successfully: {checker_exe_path}")
         return checker_exe_path
     except subprocess.CalledProcessError as exc:
         logger.error(f"Failed to compile checker: {exc}")
         return None
+    finally:
+        shutil.rmtree(compile_dir, ignore_errors=True)
 
 
 def _run_test(test_file: str, sol_code: str, lang: str, checker_executable: Optional[str]) -> TestCaseResult:
