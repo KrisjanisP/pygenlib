@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Optional
 import os
 import re
 
@@ -10,7 +11,7 @@ class CommonConfig:
     model_solution_path: str = ""
 
     testlib_gen_path: str = "gen.cpp"
-    testlib_checker_path: str = "checker.cpp"
+    testlib_checker_path: str = ""  # Empty by default - no checker, use character comparison
     testlib_header_path: str = "testlib.h"
 
     tests_dir: str = "./tests"
@@ -80,6 +81,10 @@ def override_checker_path(path):
     _conf.testlib_checker_path = _require_existing_file(path, "testlib checker")
     return _conf.testlib_checker_path
 
+def enable_checker():
+    global _conf
+    _conf.testlib_checker_path = "checker.cpp"
+
 
 def override_testlib_h_path(path):
     global _conf
@@ -123,8 +128,10 @@ def get_reports_dir_path() -> str:
     return _conf.reports_dir
 
 
-def get_testlib_checker_path() -> str:
+def get_testlib_checker_path() -> Optional[str]:
     global _conf
+    if not _conf.testlib_checker_path:
+        return None
     _conf.testlib_checker_path = _require_existing_file(_conf.testlib_checker_path, "testlib checker")
     return _conf.testlib_checker_path
 
