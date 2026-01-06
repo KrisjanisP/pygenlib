@@ -52,3 +52,8 @@ def clean():
     # Remove task.yaml
     if os.path.exists("task.yaml"):
         os.remove("task.yaml")
+    
+    # Remove scores directory
+    scores_dir = config.get_scores_dir_path()
+    if os.path.exists(scores_dir):
+        shutil.rmtree(scores_dir)

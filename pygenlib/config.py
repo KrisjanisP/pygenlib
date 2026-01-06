@@ -17,6 +17,7 @@ class CommonConfig:
     tests_dir: str = "./tests"
     cache_dir: str = "./cache"
     reports_dir: str = "./reports"
+    scores_dir: str = "./scores"
     
     gen_extra_files: dict[str, str] = field(default_factory=dict)
 
@@ -64,9 +65,8 @@ def add_solution(new_solution_path, is_model=False):
     abs_path = _require_existing_file(new_solution_path, "solution")
     if is_model:
         _conf.model_solution_path = abs_path
-    else:
-        if abs_path not in _conf.solution_paths:
-            _conf.solution_paths.append(abs_path)
+    if abs_path not in _conf.solution_paths:
+        _conf.solution_paths.append(abs_path)
     return abs_path
 
 
@@ -181,3 +181,8 @@ def get_gen_extra_files() -> dict[str, str]:
     """Get all extra files registered for generator runs."""
     global _conf
     return _conf.gen_extra_files.copy()
+
+def get_scores_dir_path() -> str:
+    global _conf
+    _conf.scores_dir = _allow_missing_dir(_conf.scores_dir, "scores directory")
+    return _conf.scores_dir
