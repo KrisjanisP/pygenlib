@@ -17,6 +17,7 @@ class GeneratorConfig:
     generator_path: str
     testlib_header_path: str
     tests_dir: str
+    gen_extra_files: dict[str, str]
 
 _default_generator_config: Optional[GeneratorConfig] = None
 
@@ -42,6 +43,7 @@ def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None, extra_files: Optio
             or falls back to the global configuration.
         extra_files: Optional mapping of filename -> file path or literal contents.
             Files are added alongside testlib.h inside the generator sandbox.
+            These are merged with files added via config.add_gen_file() (this parameter takes precedence).
     """
     cfg = _resolve_generator_config(cfg)
     os.makedirs(cfg.tests_dir, exist_ok=True)
@@ -54,7 +56,9 @@ def gen(tg_ext, *args, cfg: Optional[GeneratorConfig] = None, extra_files: Optio
         testlib_h = f.read()
 
     compile_files = {"testlib.h": testlib_h}
-    run_files = _prepare_extra_files(extra_files)
+    # Merge stored extra files with passed extra files (passed ones take precedence)
+    merged_extra_files = {**cfg.gen_extra_files, **(extra_files or {})}
+    run_files = _prepare_extra_files(merged_extra_files)
     compile_files.update(run_files)
 
     with open(cfg.generator_path, "r") as f:
@@ -104,6 +108,7 @@ def _resolve_generator_config(generator_config: Optional[GeneratorConfig]) -> Ge
         generator_path=config.get_testlib_gen_path(),
         testlib_header_path=config.get_testlib_header_path(),
         tests_dir=config.get_tests_dir_path(),
+        gen_extra_files=config.get_gen_extra_files(),
     )
 
 

@@ -16,6 +16,8 @@ class CommonConfig:
     tests_dir: str = "./tests"
     cache_dir: str = "./cache"
     reports_dir: str = "./reports"
+    
+    gen_extra_files: dict[str, str] = field(default_factory=dict)
 
 _conf = CommonConfig()
 
@@ -149,3 +151,26 @@ def get_model_solution_path() -> str:
 def get_solution_paths() -> list[str]:
     global _conf
     return _conf.solution_paths
+
+
+def include_file(filename: str, source: str):
+    """Add an extra file to be included in all gen() calls.
+    
+    Args:
+        filename: Name of the file to add to the generator sandbox
+        source: Either a file path to read, or literal file contents
+    """
+    global _conf
+    _conf.gen_extra_files[filename] = source
+
+
+def clear_gen_files():
+    """Clear all extra files added via add_gen_file()."""
+    global _conf
+    _conf.gen_extra_files = {}
+
+
+def get_gen_extra_files() -> dict[str, str]:
+    """Get all extra files registered for generator runs."""
+    global _conf
+    return _conf.gen_extra_files.copy()
