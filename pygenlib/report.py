@@ -293,7 +293,9 @@ def _resolve_output_path(sol_path: str, provided_output: Optional[str], cfg: Rep
     if provided_output:
         return provided_output
     base_name = os.path.splitext(os.path.basename(sol_path))[0]
-    default_name = f"{cfg.task_name}_{base_name}.tsv"
+    default_name = f"{base_name}.tsv"
+    if cfg.task_name not in base_name:
+        default_name = f"{cfg.task_name}_{base_name}.tsv"
     default_path = os.path.join(cfg.reports_dir, default_name)
     logger.debug(f"Output file not specified, using: {default_path}")
     return default_path
