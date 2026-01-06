@@ -48,7 +48,7 @@ tests_groups:
 
 default_tg_yaml = TgYaml()
 
-def record_tg(st, tg, pts, public=False, c=None):
+def record_tg(st:int, tg:int, pts:int, public=False, c=None):
     default_tg_yaml.record_tg(st, tg, pts, public, c)
 
 def export_yaml(yaml_path="task.yaml"):
